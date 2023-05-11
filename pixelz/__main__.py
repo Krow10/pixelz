@@ -6,9 +6,11 @@ from datetime import timedelta
 from random import randint, random
 from time import time
 
-def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int) -> None:
+PIXEL_SPRITES = ('█', '▒', '░', '■', '●')
+
+def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int, pixel_sprite: str = PIXEL_SPRITES[0]) -> None:
     try:
-        stdscr.addch(y, x, '■', color)
+        stdscr.addch(y, x, pixel_sprite, color)
     except Exception as e:
         raise TypeError(
             f'Could not place pixel at ({y}, {x}): max is {stdscr.getmaxyx()}'
@@ -52,6 +54,7 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
     max_height, max_width = stdscr.getmaxyx()
     running = True
     show_info = True
+    pixel_sprite_index = 0
 
     # Assuming only 2 players for now
     board_matrix = [
@@ -85,7 +88,10 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
         # Draw current board state
         for y, row in enumerate(board_matrix):
             for x, player in enumerate(row):
-                put_pixel(stdscr, x, y, curses.color_pair(fighters[player]))
+                put_pixel(
+                    stdscr, x, y, curses.color_pair(fighters[player]),
+                    pixel_sprite=PIXEL_SPRITES[pixel_sprite_index]
+                )
 
         # Show statistics
         if show_info:
@@ -141,6 +147,9 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
             if user_input == ' ':
                 real_time = not real_time
                 stdscr.nodelay(int(real_time))
+
+            if user_input == 's':
+                pixel_sprite_index = (pixel_sprite_index + 1) % len(PIXEL_SPRITES)
 
             running = user_input != 'q'
 
