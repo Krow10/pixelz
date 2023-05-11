@@ -2,7 +2,9 @@
 Main entry point
 """
 import curses
+from datetime import timedelta
 from random import randint, random
+from time import time
 
 def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int) -> None:
     try:
@@ -11,6 +13,14 @@ def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int) -> Non
         raise TypeError(
             f'Could not place pixel at ({y}, {x}): max is {stdscr.getmaxyx()}'
         ) from e
+
+def display_text(stdscr: 'curses._CursesWindow', text: str, x: int, y: int, color: int) -> None:
+    stdscr.addstr(
+        y,
+        x - len(text)//2,
+        text,
+        curses.color_pair(color)
+    )
 
 def safe_index(l: list[list] | list, i: int, j: int | None = None) -> int:
     if i < 0:
@@ -34,13 +44,14 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
     for i in range(0, curses.COLORS):
         curses.init_pair(i + 1, i, -1)
 
-    stdscr.nodelay(1) # Non-blocking I/O, set to 0 for step-by-step or 1 for real-time
+    real_time = False
+    stdscr.nodelay(int(real_time)) # Non-blocking I/O, set to 0 for step-by-step or 1 for real-time
 
     # TODO: Select opposite / nice contrast colors for players
     fighters = [randint(0, curses.COLORS) for _ in range(num_players)]
     max_height, max_width = stdscr.getmaxyx()
     running = True
-    show_info = False
+    show_info = True
 
     # Assuming only 2 players for now
     board_matrix = [
@@ -68,6 +79,8 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
     neighbours_matrix[max_height - 1][max_width - 1] = \
     neighbours_matrix[max_height - 1][0] = 3
 
+    start_time = time()
+    time_elapsed = 0
     while running:
         # Draw current board state
         for y, row in enumerate(board_matrix):
@@ -76,12 +89,19 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
 
         # Show statistics
         if show_info:
-            win_ratio = sum(sum(row) for row in board_matrix)/(max_height*max_width)
-            stdscr.addstr(
-                0,
-                max_width//2 + 1 - len(str(round(win_ratio, 4))),
-                f'{round(win_ratio, 4)}',
-                curses.color_pair(fighters[win_ratio > .5])
+            win_ratio = round(sum(sum(row) for row in board_matrix)/(max_height*max_width), 4)
+
+            if win_ratio not in (0, 1):
+                time_elapsed = timedelta(seconds=time() - start_time) # TODO: Handle paused time ?
+
+            display_text(stdscr, f'Time elapsed: {time_elapsed}', max_width//2, 0, 0)
+
+            display_text(
+                stdscr,
+                f'Colors ratio: {win_ratio}',
+                max_width//2,
+                1,
+                0 if win_ratio == .5 else fighters[win_ratio > .5]
             )
 
         # Update board
@@ -115,9 +135,13 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
         if user_input > 0:
             user_input = chr(user_input).lower()
 
-            # TODO: Add space for pause / resume
             if user_input == 'i':
                 show_info = not show_info
+
+            if user_input == ' ':
+                real_time = not real_time
+                stdscr.nodelay(int(real_time))
+
             running = user_input != 'q'
 
 curses.wrapper(main)

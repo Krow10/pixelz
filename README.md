@@ -2,13 +2,19 @@
 
 A pixel fighting game running in the terminal. Inspired by the work of [**Jan Tewes Thede (@jtthede)**](https://pixelsfighting.com/).
 
-**Running the game**
+## Running the game
 
 Make sure your terminal is maximized for maximum fightingz
 
 `$ python -m pixelz` or `$ python pixelz/__main__.py`
 
-**TODO**
+### Controls
+
+- `[SPACE]`: Pause/Unpause simulation. While paused, press any other key to advance to the next step.
+- `i/I`: Show the ratio of squares on the grid. Lower number corresponds to initial left-side winning and vice-versa (the color of the text will change according the currently winning color).
+- `q/Q`: Quit the program.
+
+## TODO
 - [ ] More / cleaner statistics
 - [ ] Better simulation with biais / randomness controls
 - [ ] Edit initial setup
