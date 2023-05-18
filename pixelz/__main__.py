@@ -19,7 +19,7 @@ def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int, pixel_
 def display_text(stdscr: 'curses._CursesWindow', text: str, x: int, y: int, color: int) -> None:
     stdscr.addstr(
         y,
-        x - len(text)//2,
+        (x - len(text)//2) if x >= len(text)//2 else x,
         text,
         curses.color_pair(color)
     )
@@ -39,6 +39,9 @@ def safe_index(l: list[list] | list, i: int, j: int | None = None) -> int:
     except IndexError:
         return 0
 
+def is_user_action(input_char: str) -> bool:
+    return input_char in ('h', 'i', 's', 'q', ' ')
+
 def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
     # Init colors
     curses.start_color()
@@ -54,6 +57,7 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
     max_height, max_width = stdscr.getmaxyx()
     running = True
     show_info = True
+    show_help = True
     pixel_sprite_index = 0
 
     # Assuming only 2 players for now
@@ -84,6 +88,7 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
 
     start_time = time()
     time_elapsed = 0
+    user_input = ''
     while running:
         # Draw current board state
         for y, row in enumerate(board_matrix):
@@ -93,14 +98,26 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
                     pixel_sprite=PIXEL_SPRITES[pixel_sprite_index]
                 )
 
+        if show_help:
+            for (i, text) in enumerate([
+                '[ANY OTHER KEY]: If paused, advance the game by one tick',
+                '[SPACE]: Pause/Unpause game',
+                's: Change pixelz appearance',
+                'i: Show/Hide statistics',
+                'h: Show/Hide this help',
+                'q: Quit the application'
+            ]):
+                display_text(stdscr, text, max_width//2, max_height - i - 1, 0)
+
         # Show statistics
         if show_info:
             win_ratio = round(sum(sum(row) for row in board_matrix)/(max_height*max_width), 4)
 
-            if win_ratio not in (0, 1):
-                time_elapsed = timedelta(seconds=time() - start_time) # TODO: Handle paused time ?
+            # Update time elapsed if no winner and no user action to prevent increase on every key
+            if win_ratio not in (0, 1) and not is_user_action(user_input):
+                time_elapsed += time() - start_time
 
-            display_text(stdscr, f'Time elapsed: {time_elapsed}', max_width//2, 0, 0)
+            display_text(stdscr, f'Time elapsed: {timedelta(seconds=time_elapsed)}', max_width//2, 0, 0)
 
             display_text(
                 stdscr,
@@ -110,37 +127,15 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
                 0 if win_ratio == .5 else fighters[win_ratio > .5]
             )
 
-        # TODO: Don't update board on user input ?
-        # Update board
-        flip = []
-        for y, row in enumerate(board_matrix):
-            for x, player in enumerate(row):
-                # Compute ratio of same color cells to maximum neighbours
-                ratio = (
-                    safe_index(board_matrix, y-1, x) +
-                    safe_index(board_matrix, y-1, x-1) +
-                    safe_index(board_matrix, y-1, x+1) +
-                    safe_index(board_matrix, y+1, x) +
-                    safe_index(board_matrix, y+1, x-1) +
-                    safe_index(board_matrix, y+1, x+1) +
-                    safe_index(row, x-1) +
-                    safe_index(row, x+1)
-                ) / neighbours_matrix[y][x]
-
-                # If ratio is not high enough (e.g. surrounded by some opposite color pixelz), colors will be flipped
-                threshold = random()
-                if int(ratio > threshold) != player:
-                    flip.append((y, x))
-
-        # Flip colors for fallen pixelz
-        for (y, x) in flip:
-            board_matrix[y][x] = 1 - board_matrix[y][x]
-
-        stdscr.refresh()
-
+        # Handle user input
         user_input = stdscr.getch()
         if user_input > 0:
+             # Update relative start for elapsed time on every input to work with advancing time in paused game
+            start_time = time()
             user_input = chr(user_input).lower()
+
+            if user_input == 'h':
+                show_help = not show_help
 
             if user_input == 'i':
                 show_info = not show_info
@@ -153,5 +148,33 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
                 pixel_sprite_index = (pixel_sprite_index + 1) % len(PIXEL_SPRITES)
 
             running = user_input != 'q'
+
+        # Update board if no user action for this loop
+        if not is_user_action(user_input):
+            flip = []
+            for y, row in enumerate(board_matrix):
+                for x, player in enumerate(row):
+                    # Compute ratio of same color cells to maximum neighbours
+                    ratio = (
+                        safe_index(board_matrix, y-1, x) +
+                        safe_index(board_matrix, y-1, x-1) +
+                        safe_index(board_matrix, y-1, x+1) +
+                        safe_index(board_matrix, y+1, x) +
+                        safe_index(board_matrix, y+1, x-1) +
+                        safe_index(board_matrix, y+1, x+1) +
+                        safe_index(row, x-1) +
+                        safe_index(row, x+1)
+                    ) / neighbours_matrix[y][x]
+
+                    # If ratio is not high enough (e.g. surrounded by some opposite color pixelz), colors will be flipped
+                    threshold = random()
+                    if int(ratio > threshold) != player:
+                        flip.append((y, x))
+
+            # Flip colors for fallen pixelz
+            for (y, x) in flip:
+                board_matrix[y][x] = 1 - board_matrix[y][x]
+
+        stdscr.refresh()
 
 curses.wrapper(main)

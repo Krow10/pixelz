@@ -11,7 +11,8 @@ Make sure your terminal is maximized for maximum fightingz
 ### Controls
 
 - `[SPACE]`: Pause/Unpause simulation. While paused, press any other key to advance to the next step.
-- `i/I`: Show the ratio of squares on the grid. Lower number corresponds to initial left-side winning and vice-versa (the color of the text will change according the currently winning color).
+- `h/H`: Show/hide the in-game help.
+- `i/I`: Show/hide the ratio of squares on the grid. Lower number corresponds to initial left-side winning and vice-versa (the color of the text will change according the currently winning color).
 - `s/S`: Cycle through pixel sprites to change pixelz appearance. Add you own to the `PIXEL_SPRITES` variable [here](pixelz/__main__.py#L9).
 - `q/Q`: Quit the program.
 
