@@ -6,7 +6,7 @@ from datetime import timedelta
 from random import randint, random
 from time import time
 
-PIXEL_SPRITES = ('█', '▒', '░', '■', '●')
+PIXEL_SPRITES = ('█', '▒', '░', '■', '●', '◈', '⬢')
 
 def put_pixel(stdscr: 'curses._CursesWindow', x: int, y: int, color: int, pixel_sprite: str = PIXEL_SPRITES[0]) -> None:
     try:
@@ -110,6 +110,7 @@ def main(stdscr: 'curses._CursesWindow', num_players: int = 2) -> None:
                 0 if win_ratio == .5 else fighters[win_ratio > .5]
             )
 
+        # TODO: Don't update board on user input ?
         # Update board
         flip = []
         for y, row in enumerate(board_matrix):
