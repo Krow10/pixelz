@@ -2,6 +2,8 @@
 
 A pixel fighting game running in the terminal. Inspired by the work of [**Jan Tewes Thede (@jtthede)**](https://pixelsfighting.com/).
 
+[demo.webm](https://github.com/Krow10/pixelz/assets/23462475/e5aa824c-1b91-4141-9f9a-3cb0cbb2bbfd)
+
 ## Running the game
 
 Make sure your terminal is maximized for maximum fightingz
